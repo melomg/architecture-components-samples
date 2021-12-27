@@ -22,8 +22,10 @@ import androidx.paging.PagingSource.LoadParams.Prepend
 import androidx.paging.PagingSource.LoadResult.Page
 import androidx.paging.PagingState
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
+import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.inMemory.byItem.ItemKeyedSubredditPagingSource
 import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
+import kotlinx.coroutines.flow.MutableStateFlow
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -34,7 +36,8 @@ import java.io.IOException
  */
 class PageKeyedSubredditPagingSource(
     private val redditApi: RedditApi,
-    private val subredditName: String
+    private val subredditName: String,
+    private val metadataState: MutableStateFlow<RedditMetadata?>,
 ) : PagingSource<String, RedditPost>() {
     override suspend fun load(params: LoadParams<String>): LoadResult<String, RedditPost> {
         return try {
@@ -45,14 +48,18 @@ class PageKeyedSubredditPagingSource(
                 limit = params.loadSize
             ).data
 
+            metadataState.value = RedditMetadata("Test")
+
             Page(
                 data = data.children.map { it.data },
                 prevKey = data.before,
                 nextKey = data.after
             )
         } catch (e: IOException) {
+            metadataState.value = null
             LoadResult.Error(e)
         } catch (e: HttpException) {
+            metadataState.value = null
             LoadResult.Error(e)
         }
     }

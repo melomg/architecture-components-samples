@@ -19,19 +19,25 @@ package com.android.example.paging.pagingwithnetwork.reddit.repository.inMemory.
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
+import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Repository implementation that loads data directly from network by using the previous / next page
  * keys returned in the query.
  */
-class InMemoryByPageKeyRepository(private val redditApi: RedditApi) : RedditPostRepository {
+class InMemoryByPageKeyRepository(
+    private val redditApi: RedditApi,
+    private val metadataState: MutableStateFlow<RedditMetadata?>,
+) : RedditPostRepository {
     override fun postsOfSubreddit(subReddit: String, pageSize: Int) = Pager(
         PagingConfig(pageSize)
     ) {
         PageKeyedSubredditPagingSource(
             redditApi = redditApi,
-            subredditName = subReddit
+            subredditName = subReddit,
+            metadataState = metadataState,
         )
     }.flow
 }

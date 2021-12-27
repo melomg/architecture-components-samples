@@ -32,7 +32,9 @@ import com.android.example.paging.pagingwithnetwork.GlideApp
 import com.android.example.paging.pagingwithnetwork.databinding.ActivityRedditBinding
 import com.android.example.paging.pagingwithnetwork.reddit.ServiceLocator
 import com.android.example.paging.pagingwithnetwork.reddit.paging.asMergedLoadStates
+import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -54,12 +56,13 @@ class RedditActivity : AppCompatActivity() {
                 modelClass: Class<T>,
                 handle: SavedStateHandle
             ): T {
+                val metadataState = MutableStateFlow<RedditMetadata?>(null)
                 val repoTypeParam = intent.getIntExtra(KEY_REPOSITORY_TYPE, 0)
                 val repoType = RedditPostRepository.Type.values()[repoTypeParam]
                 val repo = ServiceLocator.instance(this@RedditActivity)
-                    .getRepository(repoType)
+                    .getRepository(repoType, metadataState)
                 @Suppress("UNCHECKED_CAST")
-                return SubRedditViewModel(repo, handle) as T
+                return SubRedditViewModel(repo, handle, metadataState) as T
             }
         }
     }

@@ -21,10 +21,12 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.db.RedditDb
+import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
 import com.android.example.paging.pagingwithnetwork.reddit.repository.inDb.DbRedditPostRepository
 import com.android.example.paging.pagingwithnetwork.reddit.repository.inMemory.byItem.InMemoryByItemRepository
 import com.android.example.paging.pagingwithnetwork.reddit.repository.inMemory.byPage.InMemoryByPageKeyRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Super simplified service locator implementation to allow us to replace default implementations
@@ -38,8 +40,9 @@ interface ServiceLocator {
             synchronized(LOCK) {
                 if (instance == null) {
                     instance = DefaultServiceLocator(
-                            app = context.applicationContext as Application,
-                            useInMemoryDb = false)
+                        app = context.applicationContext as Application,
+                        useInMemoryDb = false
+                    )
                 }
                 return instance!!
             }
@@ -54,7 +57,10 @@ interface ServiceLocator {
         }
     }
 
-    fun getRepository(type: RedditPostRepository.Type): RedditPostRepository
+    fun getRepository(
+        type: RedditPostRepository.Type,
+        metadataState: MutableStateFlow<RedditMetadata?>
+    ): RedditPostRepository
 
     fun getRedditApi(): RedditApi
 }
@@ -62,7 +68,8 @@ interface ServiceLocator {
 /**
  * default implementation of ServiceLocator that uses production endpoints.
  */
-open class DefaultServiceLocator(val app: Application, val useInMemoryDb: Boolean) : ServiceLocator {
+open class DefaultServiceLocator(val app: Application, val useInMemoryDb: Boolean) :
+    ServiceLocator {
     private val db by lazy {
         RedditDb.create(app, useInMemoryDb)
     }
@@ -71,13 +78,17 @@ open class DefaultServiceLocator(val app: Application, val useInMemoryDb: Boolea
         RedditApi.create()
     }
 
-    override fun getRepository(type: RedditPostRepository.Type): RedditPostRepository {
+    override fun getRepository(
+        type: RedditPostRepository.Type,
+        metadataState: MutableStateFlow<RedditMetadata?>
+    ): RedditPostRepository {
         return when (type) {
             RedditPostRepository.Type.IN_MEMORY_BY_ITEM -> InMemoryByItemRepository(
-                    redditApi = getRedditApi()
+                redditApi = getRedditApi()
             )
             RedditPostRepository.Type.IN_MEMORY_BY_PAGE -> InMemoryByPageKeyRepository(
-                    redditApi = getRedditApi()
+                redditApi = getRedditApi(),
+                metadataState = metadataState
             )
             RedditPostRepository.Type.DB -> DbRedditPostRepository(
                 db = db,

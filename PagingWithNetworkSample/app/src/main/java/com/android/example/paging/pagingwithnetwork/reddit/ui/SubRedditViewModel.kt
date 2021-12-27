@@ -21,13 +21,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
+import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 
 class SubRedditViewModel(
     private val repository: RedditPostRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val metadataState: MutableStateFlow<RedditMetadata?>,
 ) : ViewModel() {
     companion object {
         const val KEY_SUBREDDIT = "subreddit"
