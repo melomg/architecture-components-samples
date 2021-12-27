@@ -37,8 +37,9 @@ import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPost
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.map
 
 /**
  * A list activity that shows reddit posts in the given sub-reddit.
@@ -104,13 +105,10 @@ class RedditActivity : AppCompatActivity() {
                 // Use a state-machine to track LoadStates such that we only transition to
                 // NotLoading from a RemoteMediator load if it was also presented to UI.
                 .asMergedLoadStates()
-                // Only emit when REFRESH changes, as we only want to react on loads replacing the
-                // list.
-                .distinctUntilChangedBy { it.refresh }
-                // Only react to cases where REFRESH completes i.e., NotLoading.
-                .filter { it.refresh is LoadState.NotLoading }
-                // Scroll to top is synchronous with UI updates, even if remote load was triggered.
-                .collect { binding.list.scrollToPosition(0) }
+                .map { combinedStates -> combinedStates.refresh }
+                .dropWhile { loadState -> loadState is LoadState.NotLoading }
+                .distinctUntilChanged()
+                .collectLatest(model::onLoadStateChanged)
         }
     }
 

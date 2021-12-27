@@ -20,6 +20,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
+import androidx.paging.LoadState
 import androidx.paging.cachedIn
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditMetadata
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
@@ -54,6 +55,22 @@ class SubRedditViewModel(
     fun showSubreddit(subreddit: String) {
         if (!shouldShowSubreddit(subreddit)) return
         savedStateHandle.set(KEY_SUBREDDIT, subreddit)
+    }
+
+    fun onLoadStateChanged(loadState: LoadState) = when (loadState) {
+        is LoadState.NotLoading -> {
+            // This will crash when adapter is refreshed
+            // since loadStateFlow is emitting `NotLoading` at first
+            checkNotNull(metadataState.value) {
+                "Missing metadata value after load completed"
+            }
+        }
+        LoadState.Loading -> {
+//                TODO()
+        }
+        is LoadState.Error -> {
+//                TODO()
+        }
     }
 
     private fun shouldShowSubreddit(subreddit: String): Boolean {
